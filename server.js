@@ -1,3 +1,4 @@
+import FormData from "form-data";
 import express from "express";
 import multer from "multer";
 import cors from "cors";
@@ -69,6 +70,10 @@ ${question}
   }
 });
 
-app.listen(3000, () => {
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
   console.log("Server running on port 3000");
 });
