@@ -1,5 +1,4 @@
 import FormData from "form-data";
-import FormData from "form-data";
 import express from "express";
 import multer from "multer";
 import cors from "cors";
