@@ -50,27 +50,37 @@ const ip =
   "unknown";
 
     const message = `
-Новое обращение BERLIANI
+📩 Новая заявка BERLIANI
 
-ФИО: ${name}
-Страна: ${country}
-Телефон: ${phone}
+👤 ФИО: ${name}
+🌍 Страна: ${country}
+📞 Телефон: ${phone}
 
-Способ связи:
-${methods}
+📧 Email: ${email || ""}
+📲 WhatsApp: ${whatsappPhone || ""} ${whatsappUsername || ""}
+📲 Telegram: ${telegramPhone || ""} ${telegramUsername || ""}
 
-IP: ${ip}
-Гео: ${location}
+🧭 Способ связи:
+Messenger: ${methodMessenger}
+WhatsApp: ${whatsappSelected}
+Telegram: ${telegramSelected}
+Email: ${methodEmail}
+Call: ${call}
+Message: ${message}
+Other: ${methodOther}
 
-Вопрос:
+🌐 IP: ${ip}
+
+❓ Вопрос:
 ${question}
+`;
+
 await transporter.sendMail({
   from: process.env.YANDEX_USER,
   to: process.env.YANDEX_USER,
   subject: "Новая заявка BERLIANI",
   text: message
 });
-`;
 
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
