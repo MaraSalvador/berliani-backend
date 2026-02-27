@@ -13,6 +13,7 @@ app.use(express.json());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
 const transporter = nodemailer.createTransport({
   host: "smtp.yandex.ru",
   port: 465,
@@ -25,31 +26,32 @@ const transporter = nodemailer.createTransport({
 
 app.post("/send", upload.array("files"), async (req, res) => {
   try {
+
     const {
-  name,
-  country,
-  phone,
-  question,
-  email,
-  whatsappPhone,
-  whatsappUsername,
-  telegramPhone,
-  telegramUsername,
-  call,
-  message,
-  methodMessenger,
-  methodEmail,
-  methodOther,
-  whatsappSelected,
-  telegramSelected
-} = req.body;
+      name,
+      country,
+      phone,
+      question,
+      email,
+      whatsappPhone,
+      whatsappUsername,
+      telegramPhone,
+      telegramUsername,
+      call,
+      message,
+      methodMessenger,
+      methodEmail,
+      methodOther,
+      whatsappSelected,
+      telegramSelected
+    } = req.body;
 
-const ip =
-  req.headers["x-forwarded-for"] ||
-  req.socket.remoteAddress ||
-  "unknown";
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress ||
+      "unknown";
 
-    const message = `
+    const textMessage = `
 📩 Новая заявка BERLIANI
 
 👤 ФИО: ${name}
@@ -75,35 +77,66 @@ Other: ${methodOther}
 ${question}
 `;
 
-await transporter.sendMail({
-  from: process.env.YANDEX_USER,
-  to: process.env.YANDEX_USER,
-  subject: "Новая заявка BERLIANI",
-  text: message
-});
+    await transporter.sendMail({
+      from: process.env.YANDEX_USER,
+      to: process.env.YANDEX_USER,
+      subject: "Новая заявка BERLIANI",
+      text: textMessage
+    });
 
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const formData = new FormData();
-        formData.append("chat_id", TELEGRAM_CHAT_ID);
-        formData.append("caption", message);
-        formData.append("document", file.buffer, file.originalname);
 
-        await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
-          {
-            method: "POST",
-            body: formData
-          }
-        );
-      }
-    } else {
       await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`
+        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: textMessage
+          })
+        }
       );
+
+      const media = req.files.map((file, index) => ({
+        type: "document",
+        media: `attach://file${index}`
+      }));
+
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      formData.append("media", JSON.stringify(media));
+
+      req.files.forEach((file, index) => {
+        formData.append(`file${index}`, file.buffer, file.originalname);
+      });
+
+      await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`,
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+    } else {
+
+      await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: textMessage
+          })
+        }
+      );
+
     }
 
     res.json({ success: true });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
