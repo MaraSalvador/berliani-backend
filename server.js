@@ -3,6 +3,7 @@ import express from "express";
 import multer from "multer";
 import cors from "cors";
 import fetch from "node-fetch";
+import nodemailer from "nodemailer";
 
 const app = express();
 const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
@@ -12,6 +13,15 @@ app.use(express.json());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const transporter = nodemailer.createTransport({
+  host: "smtp.yandex.ru",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.YANDEX_USER,
+    pass: process.env.YANDEX_PASS
+  }
+});
 
 app.post("/send", upload.array("files"), async (req, res) => {
   try {
@@ -54,6 +64,12 @@ IP: ${ip}
 
 Вопрос:
 ${question}
+await transporter.sendMail({
+  from: process.env.YANDEX_USER,
+  to: process.env.YANDEX_USER,
+  subject: "Новая заявка BERLIANI",
+  text: message
+});
 `;
 
     if (req.files && req.files.length > 0) {
