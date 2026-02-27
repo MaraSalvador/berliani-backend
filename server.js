@@ -16,14 +16,28 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 app.post("/send", upload.array("files"), async (req, res) => {
   try {
     const {
-      name,
-      country,
-      phone,
-      question,
-      methods,
-      ip,
-      location
-    } = req.body;
+  name,
+  country,
+  phone,
+  question,
+  email,
+  whatsappPhone,
+  whatsappUsername,
+  telegramPhone,
+  telegramUsername,
+  call,
+  message,
+  methodMessenger,
+  methodEmail,
+  methodOther,
+  whatsappSelected,
+  telegramSelected
+} = req.body;
+
+const ip =
+  req.headers["x-forwarded-for"] ||
+  req.socket.remoteAddress ||
+  "unknown";
 
     const message = `
 Новое обращение BERLIANI
