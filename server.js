@@ -77,26 +77,27 @@ Other: ${methodOther}
 ${question}
 `;
 
-    await transporter.sendMail({
-      from: process.env.YANDEX_USER,
-      to: process.env.YANDEX_USER,
-      subject: "Новая заявка BERLIANI",
-      text: textMessage
-    });
+    /* =========================
+       TELEGRAM MESSAGE
+    ========================= */
+
+    await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: textMessage
+        })
+      }
+    );
+
+    /* =========================
+       TELEGRAM FILES
+    ========================= */
 
     if (req.files && req.files.length > 0) {
-
-      await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: textMessage
-          })
-        }
-      );
 
       const media = req.files.map((file, index) => ({
         type: "document",
@@ -119,20 +120,21 @@ ${question}
         }
       );
 
-    } else {
+    }
 
-      await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: textMessage
-          })
-        }
-      );
+    /* =========================
+       EMAIL (НЕ БЛОКИРУЕТ TELEGRAM)
+    ========================= */
 
+    try {
+      await transporter.sendMail({
+        from: process.env.YANDEX_USER,
+        to: process.env.YANDEX_USER,
+        subject: "Новая заявка BERLIANI",
+        text: textMessage
+      });
+    } catch (e) {
+      console.log("Email error:", e.message);
     }
 
     res.json({ success: true });
