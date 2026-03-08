@@ -35,9 +35,6 @@ const transporter = nodemailer.createTransport({
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS
   },
-  pool: true,
-  maxConnections: 1,
-  maxMessages: 50,
   tls: {
     rejectUnauthorized: false
   }
