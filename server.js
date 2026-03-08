@@ -3,7 +3,6 @@ import express from "express";
 import multer from "multer";
 import cors from "cors";
 import fetch from "node-fetch";
-import nodemailer from "nodemailer";
 import http from "http";
 import https from "https";
 
@@ -22,26 +21,6 @@ app.use(express.json());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-/* =========================
-   SMTP YANDEX (СТАБИЛЬНО)
-========================= */
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.yandex.com",
-  port: 465,
-  secure: true,
-  connectionTimeout: 30000,
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  auth: {
-    user: process.env.YANDEX_USER,
-    pass: process.env.YANDEX_PASS
-  },
-  tls: {
-    servername: "smtp.yandex.com"
-  }
-});
 
 app.post("/send", upload.array("files"), async (req, res) => {
   try {
@@ -143,16 +122,19 @@ ${question}
 
     }
 
-    /* =========================
-       EMAIL YANDEX
-    ========================= */
-
-    await transporter.sendMail({
-      from: `"BERLIANI" <${process.env.YANDEX_USER}>`,
-      to: process.env.YANDEX_USER,
-      subject: "Новая заявка BERLIANI",
-      text: textMessage
-    });
+    await fetch("https://api.resend.com/emails", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${process.env.RESEND_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    from: "BERLIANI <onboarding@resend.dev>",
+    to: [process.env.YANDEX_USER],
+    subject: "Новая заявка BERLIANI",
+    text: textMessage
+  })
+});
 
     res.json({ success: true });
 
