@@ -6,13 +6,21 @@ import fetch from "node-fetch";
 import nodemailer from "nodemailer";
 
 const app = express();
-const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
 
 app.use(cors());
 app.use(express.json());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+/* =========================
+   SMTP YANDEX (СТАБИЛЬНО)
+========================= */
 
 const transporter = nodemailer.createTransport({
   host: "smtp.yandex.ru",
@@ -21,6 +29,12 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS
+  },
+  pool: true,
+  maxConnections: 1,
+  maxMessages: 50,
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -109,7 +123,9 @@ ${question}
       formData.append("media", JSON.stringify(media));
 
       req.files.forEach((file, index) => {
-        formData.append(`file${index}`, file.buffer, file.originalname);
+        formData.append(`file${index}`, file.buffer, {
+          filename: file.originalname
+        });
       });
 
       await fetch(
@@ -123,26 +139,29 @@ ${question}
     }
 
     /* =========================
-       EMAIL (НЕ БЛОКИРУЕТ TELEGRAM)
+       EMAIL YANDEX
     ========================= */
 
-    try {
-      await transporter.sendMail({
-        from: process.env.YANDEX_USER,
-        to: process.env.YANDEX_USER,
-        subject: "Новая заявка BERLIANI",
-        text: textMessage
-      });
-    } catch (e) {
-      console.log("Email error:", e.message);
-    }
+    await transporter.sendMail({
+      from: `"BERLIANI" <${process.env.YANDEX_USER}>`,
+      to: process.env.YANDEX_USER,
+      subject: "Новая заявка BERLIANI",
+      text: textMessage
+    });
 
     res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+
+    console.error("SERVER ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Server error"
+    });
+
   }
+
 });
 
 const PORT = process.env.PORT || 3000;
