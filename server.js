@@ -4,6 +4,11 @@ import multer from "multer";
 import cors from "cors";
 import fetch from "node-fetch";
 import nodemailer from "nodemailer";
+import http from "http";
+import https from "https";
+
+http.globalAgent.keepAlive = true;
+https.globalAgent.keepAlive = true;
 
 const app = express();
 
