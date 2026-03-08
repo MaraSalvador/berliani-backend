@@ -31,9 +31,16 @@ const transporter = nodemailer.createTransport({
   host: "smtp.yandex.ru",
   port: 465,
   secure: true,
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
   auth: {
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS
+  },
+  tls: {
+    servername: "smtp.yandex.ru",
+    rejectUnauthorized: false
   }
 });
 
