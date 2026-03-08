@@ -24,8 +24,8 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const transporter = nodemailer.createTransport({
   host: "smtp.yandex.ru",
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS
