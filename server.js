@@ -130,7 +130,7 @@ ${question}
   },
   body: JSON.stringify({
     from: "BERLIANI <onboarding@resend.dev>",
-    to: [process.env.YANDEX_USER],
+    to: ["maksamaksa322@gmail.com"],
     subject: "Новая заявка BERLIANI",
     text: textMessage
   })
