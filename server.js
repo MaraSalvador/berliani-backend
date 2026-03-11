@@ -122,19 +122,22 @@ ${question}
 
     }
 
-    await fetch("https://api.resend.com/emails", {
+    const emailRes = await fetch("https://api.resend.com/emails", {
   method: "POST",
   headers: {
-    "Authorization": `Bearer ${process.env.RESEND_KEY}`,
+    Authorization: `Bearer ${process.env.RESEND_KEY}`,
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
     from: "BERLIANI <contact@mail.berliani.com>",
-    to: ["BERLIANI@JEWELRY-DIAMONDS.RU"],
+    to: ["berliani@jewelry-diamonds.ru"],
     subject: "Новая заявка BERLIANI",
     text: textMessage
   })
 });
+
+const emailData = await emailRes.text();
+console.log(emailData);
 
     res.json({ success: true });
 
