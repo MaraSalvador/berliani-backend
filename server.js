@@ -129,8 +129,8 @@ ${question}
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    from: "BERLIANI <onboarding@resend.dev>",
-    to: ["maksamaksa322@gmail.com"],
+    from: "BERLIANI <contact@berliani.com>",
+    to: ["BERLIANI@JEWELRY-DIAMONDS.RU"],
     subject: "Новая заявка BERLIANI",
     text: textMessage
   })
