@@ -37,11 +37,11 @@ app.use("/send", limiter);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024,
-    files: 5,
-    fields: 30,
-    fieldSize: 200 * 1024
-  }
+  fileSize: 10 * 1024 * 1024,
+  files: 5,
+  fields: 100,
+  fieldSize: 500 * 1024
+}
 });
 
 app.use(cors({ origin: ["https://berliani.com","https://www.berliani.com"] }));
