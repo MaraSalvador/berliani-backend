@@ -64,15 +64,16 @@ app.post("/send", upload.array("files"), async (req, res) => {
 
     const origin = req.headers.origin;
 
-    const allowedOrigins = [
-      "https://berliani.com",
-      "https://www.berliani.com"
-    ];
+const allowedOrigins = [
+  "https://berliani.com",
+  "https://www.berliani.com",
+  null
+];
 
-    if (!allowedOrigins.includes(origin)) {
-      return res.status(403).json({ error: "Invalid origin" });
-    }
-
+if (origin && !allowedOrigins.includes(origin)) {
+  return res.status(403).json({ error: "Invalid origin" });
+}
+     
     if (req.headers["x-form-secret"] !== process.env.FORM_SECRET) {
       return res.status(403).json({ error: "Forbidden" });
     }
