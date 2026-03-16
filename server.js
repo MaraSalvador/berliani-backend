@@ -77,7 +77,13 @@ app.post("/send", upload.array("files"), async (req, res) => {
   utm_medium,
   utm_campaign,
   utm_term,
-  utm_content
+  utm_content,
+  platform,
+  userAgent,
+  trafficSource,
+  actions,
+  phoneEdits,
+  typingTime
 } = req.body;
 
     /* =========================
@@ -184,10 +190,16 @@ ${geo}
 💻 Device: ${device}
 🖥 OS: ${osName}
 🌐 Browser: ${browser}
+🖥 Platform: ${platform || ""}
+📱 User Agent: ${userAgent || ""}
+🚦 Traffic source: ${trafficSource || ""}
 🌐 Language: ${language || ""}
 🕒 Timezone: ${timezone || ""}
 📱 Screen: ${screen || ""}
 🔗 Referrer: ${referrer || "direct"}
+🧭 Actions: ${actions || ""}
+☎ Phone edits: ${phoneEdits || 0}
+⌨ Message typing: ${typingTime || 0} sec
 📄 Page: ${page || ""}
 ⏱ Time on site: ${timeOnSite || ""} sec
 
