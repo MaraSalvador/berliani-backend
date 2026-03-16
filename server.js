@@ -122,7 +122,13 @@ ${question}
 
     }
 
-    const emailRes = await fetch("https://api.resend.com/emails", {
+    const attachments = (req.files || []).map(file => ({
+  filename: file.originalname,
+  content: file.buffer.toString("base64"),
+  encoding: "base64"
+}));
+
+const emailRes = await fetch("https://api.resend.com/emails", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${process.env.RESEND_KEY}`,
@@ -132,7 +138,8 @@ ${question}
     from: "BERLIANI <contact@mail.berliani.com>",
     to: ["berliani@jewelry-diamonds.ru"],
     subject: "Новая заявка BERLIANI",
-    text: textMessage
+    text: textMessage,
+    attachments: attachments
   })
 });
 
