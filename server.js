@@ -3,6 +3,7 @@ import express from "express";
 import multer from "multer";
 import cors from "cors";
 import fetch from "node-fetch";
+import os from "os";
 import http from "http";
 import https from "https";
 import rateLimit from "express-rate-limit";
@@ -51,23 +52,27 @@ app.post("/send", upload.array("files"), async (req, res) => {
   try {
 
     const {
-      name,
-      country,
-      phone,
-      question,
-      email,
-      whatsappPhone,
-      whatsappUsername,
-      telegramPhone,
-      telegramUsername,
-      call,
-      message,
-      methodMessenger,
-      methodEmail,
-      methodOther,
-      whatsappSelected,
-      telegramSelected
-    } = req.body;
+  name,
+  country,
+  phone,
+  question,
+  email,
+  whatsappPhone,
+  whatsappUsername,
+  telegramPhone,
+  telegramUsername,
+  call,
+  message,
+  methodMessenger,
+  methodEmail,
+  methodOther,
+  whatsappSelected,
+  telegramSelected,
+  language,
+  timezone,
+  screen,
+  referrer
+} = req.body;
 
     /* =========================
        BASIC VALIDATION
@@ -107,13 +112,45 @@ app.post("/send", upload.array("files"), async (req, res) => {
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
       "unknown";
+     const userAgent = req.headers["user-agent"] || "unknown";
+     let geo = "";
+
+try {
+
+  const geoRes = await fetch(`http://ip-api.com/json/${ip}`);
+  const geoData = await geoRes.json();
+
+  geo = `
+📍 ${geoData.city || ""}, ${geoData.country || ""}
+📡 ISP: ${geoData.isp || ""}
+`;
+
+} catch {}
+   let device = "Unknown";
+let browser = "Unknown";
+let osName = "Unknown";
+
+if (userAgent.includes("iPhone")) device = "iPhone";
+else if (userAgent.includes("Android")) device = "Android phone";
+else if (userAgent.includes("Mac")) device = "Mac";
+else if (userAgent.includes("Windows")) device = "Windows PC";
+
+if (userAgent.includes("Edg")) browser = "Edge";
+else if (userAgent.includes("Chrome")) browser = "Chrome";
+else if (userAgent.includes("Firefox")) browser = "Firefox";
+else if (userAgent.includes("Safari")) browser = "Safari";
+     
+if (userAgent.includes("Mac OS")) osName = "macOS";
+if (userAgent.includes("Windows")) osName = "Windows";
+if (userAgent.includes("Android")) osName = "Android";
+if (userAgent.includes("iPhone")) osName = "iOS";
 
     /* =========================
        MESSAGE TEXT
     ========================= */
 
     const textMessage = `
-📩 Новая заявка BERLIANI
+📩 Свой вопрос из раздела FAQ | сайт BERLIANI |
 
 👤 ФИО: ${name}
 🌍 Страна: ${country}
@@ -124,48 +161,57 @@ app.post("/send", upload.array("files"), async (req, res) => {
 📲 Telegram: ${telegramPhone || ""} ${telegramUsername || ""}
 
 🧭 Способ связи:
-Messenger: ${methodMessenger}
-WhatsApp: ${whatsappSelected}
-Telegram: ${telegramSelected}
-Email: ${methodEmail}
-Call: ${call}
-Message: ${message}
-Other: ${methodOther}
 
+${methodMessenger === "true" ? "☑ Мессенджеры" : ""}
+${whatsappSelected === "true" ? "   ☑ WhatsApp" : ""}
+${telegramSelected === "true" ? "   ☑ Telegram" : ""}
+
+${methodEmail === "true" ? "☑ Электронная почта" : ""}
+
+${call === "true" ? "☑ Позвонить по номеру телефона\n   ☑ Номер указан в поле «Ваш номер телефона»" : ""}
+
+${message === "true" ? "☑ Ответить сообщением\n   ☑ Номер указан в поле «Ваш номер телефона»" : ""}
+
+${methodOther === "true" ? "☑ Другое\n   ☑ Способ связи указан в поле «Ваш вопрос»" : ""}
 🌐 IP: ${ip}
+${geo}
+💻 Device: ${device}
+🖥 OS: ${osName}
+🌐 Browser: ${browser}
+🌐 Language: ${language || ""}
+🕒 Timezone: ${timezone || ""}
+📱 Screen: ${screen || ""}
+🔗 Referrer: ${referrer || "direct"}
 
 ❓ Вопрос:
 ${question}
 `;
 
     /* =========================
-       TELEGRAM MESSAGE
-    ========================= */
-
-    await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: textMessage
-        })
-      }
-    );
-
-    /* =========================
        TELEGRAM FILES
     ========================= */
+if (!req.files || req.files.length === 0) {
 
+  await fetch(
+    `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: textMessage
+      })
+    }
+  );
+
+}
     if (req.files && req.files.length > 0) {
 
       const media = req.files.map((file, index) => ({
-        type: "document",
-        media: `attach://file${index}`
-      }));
+  type: "document",
+  media: `attach://file${index}`,
+  caption: index === 0 ? textMessage : undefined
+}));
 
       const formData = new FormData();
 
