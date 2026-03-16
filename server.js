@@ -3,7 +3,6 @@ import express from "express";
 import multer from "multer";
 import cors from "cors";
 import fetch from "node-fetch";
-import os from "os";
 import http from "http";
 import https from "https";
 import rateLimit from "express-rate-limit";
@@ -71,7 +70,14 @@ app.post("/send", upload.array("files"), async (req, res) => {
   language,
   timezone,
   screen,
-  referrer
+  referrer,
+  page,
+  timeOnSite,
+  utm_source,
+  utm_medium,
+  utm_campaign,
+  utm_term,
+  utm_content
 } = req.body;
 
     /* =========================
@@ -140,10 +146,10 @@ else if (userAgent.includes("Chrome")) browser = "Chrome";
 else if (userAgent.includes("Firefox")) browser = "Firefox";
 else if (userAgent.includes("Safari")) browser = "Safari";
      
-if (userAgent.includes("Mac OS")) osName = "macOS";
-if (userAgent.includes("Windows")) osName = "Windows";
-if (userAgent.includes("Android")) osName = "Android";
 if (userAgent.includes("iPhone")) osName = "iOS";
+else if (userAgent.includes("Android")) osName = "Android";
+else if (userAgent.includes("Mac")) osName = "macOS";
+else if (userAgent.includes("Windows")) osName = "Windows";
 
     /* =========================
        MESSAGE TEXT
@@ -182,6 +188,15 @@ ${geo}
 🕒 Timezone: ${timezone || ""}
 📱 Screen: ${screen || ""}
 🔗 Referrer: ${referrer || "direct"}
+📄 Page: ${page || ""}
+⏱ Time on site: ${timeOnSite || ""} sec
+
+📊 UTM:
+Source: ${utm_source || ""}
+Medium: ${utm_medium || ""}
+Campaign: ${utm_campaign || ""}
+Term: ${utm_term || ""}
+Content: ${utm_content || ""}
 
 ❓ Вопрос:
 ${question}
