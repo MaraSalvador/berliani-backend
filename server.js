@@ -11,6 +11,7 @@ http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
 const app = express();
+app.disable("x-powered-by");
 
 /* =========================
    RATE LIMIT (ANTI SPAM)
@@ -124,7 +125,7 @@ app.post("/send", upload.array("files"), async (req, res) => {
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
       "unknown";
-     const userAgent = req.headers["user-agent"] || "unknown";
+     const headerUserAgent = req.headers["user-agent"] || "unknown";
      let geo = "";
 
 try {
@@ -142,20 +143,20 @@ try {
 let browser = "Unknown";
 let osName = "Unknown";
 
-if (userAgent.includes("iPhone")) device = "iPhone";
-else if (userAgent.includes("Android")) device = "Android phone";
-else if (userAgent.includes("Mac")) device = "Mac";
-else if (userAgent.includes("Windows")) device = "Windows PC";
+if (headerUserAgent.includes("iPhone")) device = "iPhone";
+else if (headerUserAgent.includes("Android")) device = "Android phone";
+else if (headerUserAgent.includes("Mac")) device = "Mac";
+else if (headerUserAgent.includes("Windows")) device = "Windows PC";
 
-if (userAgent.includes("Edg")) browser = "Edge";
-else if (userAgent.includes("Chrome")) browser = "Chrome";
-else if (userAgent.includes("Firefox")) browser = "Firefox";
-else if (userAgent.includes("Safari")) browser = "Safari";
+if (headerUserAgent.includes("Edg")) browser = "Edge";
+else if (headerUserAgent.includes("Chrome")) browser = "Chrome";
+else if (headerUserAgent.includes("Firefox")) browser = "Firefox";
+else if (headerUserAgent.includes("Safari")) browser = "Safari";
      
-if (userAgent.includes("iPhone")) osName = "iOS";
-else if (userAgent.includes("Android")) osName = "Android";
-else if (userAgent.includes("Mac")) osName = "macOS";
-else if (userAgent.includes("Windows")) osName = "Windows";
+if (headerUserAgent.includes("iPhone")) osName = "iOS";
+else if (headerUserAgent.includes("Android")) osName = "Android";
+else if (headerUserAgent.includes("Mac")) osName = "macOS";
+else if (headerUserAgent.includes("Windows")) osName = "Windows";
 
     /* =========================
        MESSAGE TEXT
@@ -191,7 +192,7 @@ ${geo}
 🖥 OS: ${osName}
 🌐 Browser: ${browser}
 🖥 Platform: ${platform || ""}
-📱 User Agent: ${userAgent || ""}
+📱 User Agent: ${headerUserAgent || ""}
 🚦 Traffic source: ${trafficSource || ""}
 🌐 Language: ${language || ""}
 🕒 Timezone: ${timezone || ""}
