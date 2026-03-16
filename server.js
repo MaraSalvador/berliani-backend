@@ -13,12 +13,9 @@ https.globalAgent.keepAlive = true;
 const app = express();
 
 app.set("trust proxy", 1);
-
 app.disable("x-powered-by");
 
-/* =========================
-   RATE LIMIT (ANTI SPAM)
-========================= */
+/* RATE LIMIT */
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -30,9 +27,7 @@ const limiter = rateLimit({
 
 app.use("/send", limiter);
 
-/* =========================
-   FILE UPLOAD
-========================= */
+/* FILE UPLOAD */
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -44,7 +39,9 @@ const upload = multer({
   }
 });
 
-app.use(cors({ origin: ["https://berliani.com","https://www.berliani.com"] }));
+app.use(cors({
+  origin: ["https://berliani.com", "https://www.berliani.com"]
+}));
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
@@ -54,9 +51,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 const recentPhones = new Map();
 
-/* =========================
-   FORM ENDPOINT
-========================= */
+/* FORM ENDPOINT */
 
 app.post("/send", upload.array("files"), async (req, res) => {
 
@@ -64,16 +59,16 @@ app.post("/send", upload.array("files"), async (req, res) => {
 
     const origin = req.headers.origin;
 
-const allowedOrigins = [
-  "https://berliani.com",
-  "https://www.berliani.com",
-  null
-];
+    const allowedOrigins = [
+      "https://berliani.com",
+      "https://www.berliani.com",
+      null
+    ];
 
-if (origin && !allowedOrigins.includes(origin)) {
-  return res.status(403).json({ error: "Invalid origin" });
-}
-     
+    if (origin && !allowedOrigins.includes(origin)) {
+      return res.status(403).json({ error: "Invalid origin" });
+    }
+
     if (req.headers["x-form-secret"] !== process.env.FORM_SECRET) {
       return res.status(403).json({ error: "Forbidden" });
     }
@@ -114,10 +109,6 @@ if (origin && !allowedOrigins.includes(origin)) {
       typingTime
     } = req.body;
 
-    /* =========================
-       BASIC VALIDATION
-    ========================= */
-
     if (!name || !phone || !question) {
       return res.status(400).json({ error: "Invalid request" });
     }
@@ -131,10 +122,6 @@ if (origin && !allowedOrigins.includes(origin)) {
 
     recentPhones.set(phone, now);
 
-    /* =========================
-       FILE TYPE VALIDATION
-    ========================= */
-
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -146,58 +133,76 @@ if (origin && !allowedOrigins.includes(origin)) {
     if (req.files) {
       for (const file of req.files) {
         if (!allowedTypes.includes(file.mimetype)) {
-          return res.status(400).json({
-            error: "Invalid file type"
-          });
+          return res.status(400).json({ error: "Invalid file type" });
         }
       }
     }
-
-    /* =========================
-       USER IP
-    ========================= */
 
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
       "unknown";
 
-    const headerUserAgent = req.headers["user-agent"] || "unknown";
+    let geoText = "";
 
-    let geo = "";
+    try {
+      const geoRes = await fetch(`http://ip-api.com/json/${ip}`);
+      const geoData = await geoRes.json();
 
-    fetch(`http://ip-api.com/json/${ip}`)
-      .then(r => r.json())
-      .then(geoData => {
-        geo = `
-📍 ${geoData.city || ""}, ${geoData.country || ""}
-📡 ISP: ${geoData.isp || ""}
-`;
-      })
-      .catch(() => {});
+      geoText =
+        "📍 " + (geoData.city || "") + ", " + (geoData.country || "") +
+        "\n📡 ISP: " + (geoData.isp || "");
+    } catch {}
 
-    let device = "Unknown";
-    let browser = "Unknown";
-    let osName = "Unknown";
+    const headerUserAgent = req.headers["user-agent"] || "";
 
-    if (headerUserAgent.includes("iPhone")) device = "iPhone";
-    else if (headerUserAgent.includes("Android")) device = "Android phone";
-    else if (headerUserAgent.includes("Mac")) device = "Mac";
-    else if (headerUserAgent.includes("Windows")) device = "Windows PC";
+    let device = "Компьютер";
+    let browser = "Не определён";
+    let osName = "Не определена";
 
-    if (headerUserAgent.includes("Edg")) browser = "Edge";
-    else if (headerUserAgent.includes("Chrome")) browser = "Chrome";
-    else if (headerUserAgent.includes("Firefox")) browser = "Firefox";
-    else if (headerUserAgent.includes("Safari")) browser = "Safari";
+    if (/iphone/i.test(headerUserAgent)) device = "iPhone";
+    else if (/android/i.test(headerUserAgent)) device = "Android";
+    else if (/ipad/i.test(headerUserAgent)) device = "iPad";
+    else if (/mac/i.test(headerUserAgent)) device = "Mac";
+    else if (/windows/i.test(headerUserAgent)) device = "Windows ПК";
 
-    if (headerUserAgent.includes("iPhone")) osName = "iOS";
-    else if (headerUserAgent.includes("Android")) osName = "Android";
-    else if (headerUserAgent.includes("Mac")) osName = "macOS";
-    else if (headerUserAgent.includes("Windows")) osName = "Windows";
+    if (/edg/i.test(headerUserAgent)) browser = "Edge";
+    else if (/chrome/i.test(headerUserAgent)) browser = "Chrome";
+    else if (/firefox/i.test(headerUserAgent)) browser = "Firefox";
+    else if (/safari/i.test(headerUserAgent)) browser = "Safari";
 
-    /* =========================
-       MESSAGE TEXT
-    ========================= */
+    if (/iphone|ipad/i.test(headerUserAgent)) osName = "iOS";
+    else if (/android/i.test(headerUserAgent)) osName = "Android";
+    else if (/mac/i.test(headerUserAgent)) osName = "macOS";
+    else if (/windows/i.test(headerUserAgent)) osName = "Windows";
+
+    const contactMethods = [];
+
+    if (methodMessenger === "true") contactMethods.push("☑ Мессенджеры");
+    if (whatsappSelected === "true") contactMethods.push("   ☑ WhatsApp");
+    if (telegramSelected === "true") contactMethods.push("   ☑ Telegram");
+    if (methodEmail === "true") contactMethods.push("☑ Электронная почта");
+    if (call === "true") contactMethods.push("☑ Позвонить по телефону");
+    if (message === "true") contactMethods.push("☑ Ответить сообщением");
+    if (methodOther === "true") contactMethods.push("☑ Другое");
+
+    const contactBlock =
+      contactMethods.length > 0
+        ? contactMethods.join("\n")
+        : "Не указан";
+
+    const utmData = [];
+
+    if (utm_source) utmData.push("Источник: " + utm_source);
+    if (utm_medium) utmData.push("Канал: " + utm_medium);
+    if (utm_campaign) utmData.push("Кампания: " + utm_campaign);
+    if (utm_term) utmData.push("Ключевое слово: " + utm_term);
+    if (utm_content) utmData.push("Контент: " + utm_content);
+
+    const utmBlock =
+      utmData.length > 0
+        ? utmData.join("\n")
+        : "UTM отсутствуют";
 
     const textMessage = `
 📩 Свой вопрос из раздела FAQ | сайт BERLIANI |
@@ -211,103 +216,73 @@ if (origin && !allowedOrigins.includes(origin)) {
 📲 Telegram: ${telegramPhone || ""} ${telegramUsername || ""}
 
 🧭 Способ связи:
+${contactBlock}
 
-${methodMessenger === "true" ? "☑ Мессенджеры" : ""}
-${whatsappSelected === "true" ? "   ☑ WhatsApp" : ""}
-${telegramSelected === "true" ? "   ☑ Telegram" : ""}
-
-${methodEmail === "true" ? "☑ Электронная почта" : ""}
-
-${call === "true" ? "☑ Позвонить по номеру телефона\n   ☑ Номер указан в поле «Ваш номер телефона»" : ""}
-
-${message === "true" ? "☑ Ответить сообщением\n   ☑ Номер указан в поле «Ваш номер телефона»" : ""}
-
-${methodOther === "true" ? "☑ Другое\n   ☑ Способ связи указан в поле «Ваш вопрос»" : ""}
 🌐 IP: ${ip}
-${geo}
-💻 Device: ${device}
-🖥 OS: ${osName}
-🌐 Browser: ${browser}
-🖥 Platform: ${platform || ""}
-📱 User Agent: ${headerUserAgent || ""}
-🚦 Traffic source: ${trafficSource || ""}
-🌐 Language: ${language || ""}
-🕒 Timezone: ${timezone || ""}
-📱 Screen: ${screen || ""}
+${geoText}
+
+💻 Устройство: ${device}
+🖥 ОС: ${osName}
+🌐 Браузер: ${browser}
+
+🚦 Источник трафика: ${trafficSource || ""}
+🌐 Язык: ${language || ""}
+🕒 Часовой пояс: ${timezone || ""}
+📱 Экран: ${screen || ""}
+
 🔗 Referrer: ${referrer || "direct"}
-🧭 Actions: ${actions || ""}
-☎ Phone edits: ${phoneEdits || 0}
-⌨ Message typing: ${typingTime || 0} sec
-📄 Page: ${page || ""}
-⏱ Time on site: ${timeOnSite || ""} sec
+
+🧭 Действия: ${actions || ""}
+☎ Редактирования телефона: ${phoneEdits || 0}
+⌨ Время ввода сообщения: ${typingTime || 0} сек
+
+📄 Страница: ${page || ""}
+⏱ Время на сайте: ${timeOnSite || ""} сек
 
 📊 UTM:
-Source: ${utm_source || ""}
-Medium: ${utm_medium || ""}
-Campaign: ${utm_campaign || ""}
-Term: ${utm_term || ""}
-Content: ${utm_content || ""}
+${utmBlock}
 
 ❓ Вопрос:
 ${question}
 `;
 
-    /* =========================
-       TELEGRAM FILES
-    ========================= */
-
-    if (!req.files || req.files.length === 0) {
-
-      await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: textMessage
-          })
-        }
-      );
-
-    }
+    await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: textMessage
+        })
+      }
+    );
 
     if (req.files && req.files.length > 0) {
 
-      const media = req.files.map((file, index) => ({
-        type: "document",
-        media: `attach://file${index}`,
-        caption: index === 0 ? textMessage : undefined
-      }));
+      for (const file of req.files) {
 
-      const formData = new FormData();
+        const formData = new FormData();
 
-      formData.append("chat_id", TELEGRAM_CHAT_ID);
-      formData.append("media", JSON.stringify(media));
-
-      req.files.forEach((file, index) => {
+        formData.append("chat_id", TELEGRAM_CHAT_ID);
 
         formData.append(
-          `file${index}`,
+          "document",
           file.buffer,
           { filename: file.originalname }
         );
 
-      });
-
-      await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`,
-        {
-          method: "POST",
-          body: formData
-        }
-      );
-
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+      }
     }
-
-    /* =========================
-       EMAIL ATTACHMENTS
-    ========================= */
 
     const attachments = (req.files || []).map(file => ({
       filename: file.originalname,
@@ -315,11 +290,7 @@ ${question}
       encoding: "base64"
     }));
 
-    /* =========================
-       SEND EMAIL
-    ========================= */
-
-    const emailRes = await fetch(
+    await fetch(
       "https://api.resend.com/emails",
       {
         method: "POST",
@@ -337,10 +308,6 @@ ${question}
       }
     );
 
-    const emailData = await emailRes.text();
-
-    console.log(emailData);
-
     res.json({ success: true });
 
   } catch (err) {
@@ -355,10 +322,6 @@ ${question}
   }
 
 });
-
-/* =========================
-   SERVER
-========================= */
 
 const PORT = process.env.PORT || 3000;
 
