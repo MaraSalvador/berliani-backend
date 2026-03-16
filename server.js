@@ -11,6 +11,9 @@ http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
 const app = express();
+
+app.set("trust proxy", 1);
+
 app.disable("x-powered-by");
 
 /* =========================
