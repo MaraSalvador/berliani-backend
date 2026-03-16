@@ -5,15 +5,35 @@ import cors from "cors";
 import fetch from "node-fetch";
 import http from "http";
 import https from "https";
+import rateLimit from "express-rate-limit";
 
 http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
 const app = express();
 
+/* =========================
+   RATE LIMIT (ANTI SPAM)
+========================= */
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: "Too many requests"
+});
+
+app.use("/send", limiter);
+
+/* =========================
+   FILE UPLOAD
+========================= */
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 5
+  }
 });
 
 app.use(cors());
@@ -22,7 +42,12 @@ app.use(express.json());
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+/* =========================
+   FORM ENDPOINT
+========================= */
+
 app.post("/send", upload.array("files"), async (req, res) => {
+
   try {
 
     const {
@@ -44,10 +69,48 @@ app.post("/send", upload.array("files"), async (req, res) => {
       telegramSelected
     } = req.body;
 
+    /* =========================
+       BASIC VALIDATION
+    ========================= */
+
+    if (!name || !phone || !question) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    /* =========================
+       FILE TYPE VALIDATION
+    ========================= */
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    if (req.files) {
+      for (const file of req.files) {
+        if (!allowedTypes.includes(file.mimetype)) {
+          return res.status(400).json({
+            error: "Invalid file type"
+          });
+        }
+      }
+    }
+
+    /* =========================
+       USER IP
+    ========================= */
+
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
       "unknown";
+
+    /* =========================
+       MESSAGE TEXT
+    ========================= */
 
     const textMessage = `
 📩 Новая заявка BERLIANI
@@ -83,7 +146,9 @@ ${question}
       `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
           text: textMessage
@@ -103,13 +168,18 @@ ${question}
       }));
 
       const formData = new FormData();
+
       formData.append("chat_id", TELEGRAM_CHAT_ID);
       formData.append("media", JSON.stringify(media));
 
       req.files.forEach((file, index) => {
-        formData.append(`file${index}`, file.buffer, {
-          filename: file.originalname
-        });
+
+        formData.append(
+          `file${index}`,
+          file.buffer,
+          { filename: file.originalname }
+        );
+
       });
 
       await fetch(
@@ -122,29 +192,41 @@ ${question}
 
     }
 
+    /* =========================
+       EMAIL ATTACHMENTS
+    ========================= */
+
     const attachments = (req.files || []).map(file => ({
-  filename: file.originalname,
-  content: file.buffer.toString("base64"),
-  encoding: "base64"
-}));
+      filename: file.originalname,
+      content: file.buffer.toString("base64"),
+      encoding: "base64"
+    }));
 
-const emailRes = await fetch("https://api.resend.com/emails", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${process.env.RESEND_KEY}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    from: "BERLIANI <contact@mail.berliani.com>",
-    to: ["berliani@jewelry-diamonds.ru"],
-    subject: "Новая заявка BERLIANI",
-    text: textMessage,
-    attachments: attachments
-  })
-});
+    /* =========================
+       SEND EMAIL
+    ========================= */
 
-const emailData = await emailRes.text();
-console.log(emailData);
+    const emailRes = await fetch(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: "BERLIANI <contact@mail.berliani.com>",
+          to: ["berliani@jewelry-diamonds.ru"],
+          subject: "Новая заявка BERLIANI",
+          text: textMessage,
+          attachments: attachments
+        })
+      }
+    );
+
+    const emailData = await emailRes.text();
+
+    console.log(emailData);
 
     res.json({ success: true });
 
@@ -160,6 +242,10 @@ console.log(emailData);
   }
 
 });
+
+/* =========================
+   SERVER
+========================= */
 
 const PORT = process.env.PORT || 3000;
 
