@@ -17,12 +17,9 @@ async function safeFetch(url, options = {}, timeout = 5000) {
       signal: controller.signal
     });
 
-    if (!res.ok) {
-      throw new Error("Fetch failed");
-    }
+    if (!res.ok) throw new Error("Fetch failed");
 
     return res;
-
   } finally {
     clearTimeout(id);
   }
@@ -81,7 +78,7 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-/* FORM ENDPOINT */
+/* FORM */
 
 app.post("/send", upload.array("files"), async (req, res) => {
 
@@ -127,16 +124,18 @@ app.post("/send", upload.array("files"), async (req, res) => {
       return res.status(400).json({ error: "Invalid request" });
     }
 
+    /* FILE VALIDATION */
+
     const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "video/mp4",
-  "video/quicktime",
-  "video/webm",
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-];
+      "image/jpeg",
+      "image/png",
+      "video/mp4",
+      "video/quicktime",
+      "video/webm",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
 
     if (req.files) {
       for (const file of req.files) {
@@ -146,36 +145,58 @@ app.post("/send", upload.array("files"), async (req, res) => {
       }
     }
 
+    /* IP */
+
     const ip =
+      req.headers["x-real-ip"] ||
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
-      "unknown";
+      "";
 
-    let geoText = "";
+    /* GEO */
+
+    let geoText = "-";
 
     try {
-      const geoRes = await safeFetch(`https://ip-api.com/json/${ip}`);
+      const geoRes = await safeFetch(`https://ipapi.co/${ip}/json/`);
       const geoData = await geoRes.json();
 
       geoText =
-        "📍 " + (geoData.city || "") + ", " + (geoData.country || "") +
-        "\n📡 ISP: " + (geoData.isp || "");
+        "📍 " + (geoData.city || "") + ", " + (geoData.country_name || "") +
+        "\n📡 ISP: " + (geoData.org || "");
     } catch {}
+
+    /* CONTACT METHODS */
 
     const contactMethods = [];
 
     if (methodMessenger === "true") contactMethods.push("☑ Мессенджеры");
     if (whatsappSelected === "true") contactMethods.push("   ☑ WhatsApp");
     if (telegramSelected === "true") contactMethods.push("   ☑ Telegram");
-    if (methodEmail === "true") contactMethods.push("☑ Электронная почта");
-    if (call === "true") contactMethods.push("☑ Позвонить");
-    if (message === "true") contactMethods.push("☑ Сообщение");
-    if (methodOther === "true") contactMethods.push("☑ Другое");
+    if (methodEmail === "true") contactMethods.push("☑ Email");
+    if (call === "true") contactMethods.push("☑ Call");
+    if (message === "true") contactMethods.push("☑ Message");
+    if (methodOther === "true") contactMethods.push("☑ Other");
 
     const contactBlock =
       contactMethods.length > 0
         ? contactMethods.join("\n")
         : "Не указан";
+
+    /* MESSENGERS */
+
+    const messengersBlock = `
+${whatsappSelected === "true" ? "WhatsApp: " + (whatsappPhone || "-") + " " + (whatsappUsername || "") : ""}
+${telegramSelected === "true" ? "\nTelegram: " + (telegramPhone || "-") + " " + (telegramUsername || "") : ""}
+`;
+
+    /* TIME */
+
+    const now = new Date().toLocaleString("ru-RU", {
+      timeZone: "Europe/Moscow"
+    });
+
+    /* UTM */
 
     const utmBlock = `
 ${utm_source ? "Источник: " + utm_source : ""}
@@ -185,13 +206,22 @@ ${utm_term ? "\nКлюч: " + utm_term : ""}
 ${utm_content ? "\nКонтент: " + utm_content : ""}
 `;
 
+    /* MESSAGE */
+
     const textMessage = `
-📩 BERLIANI
+📩 FAQ from site BERLIANI
 
 ━━━━━━━━━━━━━━━
+🗓 ${now}
+
 👤 ${name}
 📞 ${phone}
-🌍 ${country}
+📧 ${email || '-'}
+🌍 ${country || '-'}
+
+━━━━━━━━━━━━━━━
+📲 КОНТАКТЫ
+${messengersBlock || '-'}
 
 ━━━━━━━━━━━━━━━
 🧭 СПОСОБ СВЯЗИ
@@ -207,16 +237,17 @@ ${question}
 
 ━━━━━━━━━━━━━━━
 📍 GEO
-${geoText || '-'}
+${geoText}
 
 ━━━━━━━━━━━━━━━
 📊 АНАЛИТИКА
 
-📄 Страница: ${page || '-'}
-🔗 Реферер: ${referrer || '-'}
-🧠 Действия: ${actions || '-'}
-✍️ Ввод: ${typingTime || 0} сек
-📱 Правки телефона: ${phoneEdits || 0}
+📄 ${page || '-'}
+🔗 ${referrer || '-'}
+🧠 ${actions || '-'}
+✍️ ${typingTime || 0} сек
+📱 ${phoneEdits || 0}
+🧠 UA: ${userAgent || '-'}
 
 ━━━━━━━━━━━━━━━
 💻 УСТРОЙСТВО
@@ -231,7 +262,7 @@ ${geoText || '-'}
 ${utmBlock || '—'}
 `;
 
-    /* TELEGRAM */
+    /* TELEGRAM TEXT */
 
     await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
@@ -242,32 +273,36 @@ ${utmBlock || '—'}
       })
     });
 
-    /* FILES TELEGRAM */
+    /* TELEGRAM FILES (ONE MESSAGE) */
 
     if (req.files && req.files.length > 0) {
-      await Promise.all(req.files.map(file => {
 
-        const formData = new FormData();
-        const safeName = Buffer.from(file.originalname, "latin1").toString("utf8");
-
-        formData.append("chat_id", TELEGRAM_CHAT_ID);
-        formData.append("document", file.buffer, { filename: safeName });
-
-        return safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
-          method: "POST",
-          body: formData
-        });
-
+      const media = req.files.map(file => ({
+        type: "document",
+        media: "attach://" + file.originalname
       }));
+
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      formData.append("media", JSON.stringify(media));
+
+      req.files.forEach(file => {
+        formData.append(file.originalname, file.buffer, file.originalname);
+      });
+
+      await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`, {
+        method: "POST",
+        body: formData
+      });
     }
+
+    /* EMAIL */
 
     const attachments = (req.files || []).map(file => ({
       filename: Buffer.from(file.originalname, "latin1").toString("utf8"),
       content: file.buffer.toString("base64"),
       encoding: "base64"
     }));
-
-    /* EMAIL ТЕБЕ */
 
     await safeFetch("https://api.resend.com/emails", {
       method: "POST",
@@ -284,7 +319,7 @@ ${utmBlock || '—'}
       })
     });
 
-    /* АВТООТВЕТ */
+    /* AUTO EMAIL */
 
     if (email) {
       await safeFetch("https://api.resend.com/emails", {
@@ -303,15 +338,8 @@ ${utmBlock || '—'}
 <div style="font-size:24px;margin-bottom:20px;">Благодарим за обращение</div>
 <div style="font-size:15px;color:#444;margin-bottom:40px;line-height:1.8;">
 Ваш запрос успешно получен.<br>
-Персональный менеджер свяжется с Вами<br>
-в ближайшее время.
+Менеджер свяжется с Вами в ближайшее время.
 </div>
-<div style="font-size:12px;color:#777;line-height:1.7;margin-bottom:60px;">
-Данное сообщение отправлено с автоматизированного адреса.<br>
-Входящие ответы на данный электронный адрес не обрабатываются.<br>
-Для связи, пожалуйста, используйте официальный канал, указанный на сайте.
-</div>
-<div style="font-size:11px;letter-spacing:0.3em;color:#999;">JEWELRY & DIAMONDS</div>
 </div>
 `
         })
@@ -321,17 +349,13 @@ ${utmBlock || '—'}
     res.json({ success: true });
 
   } catch (err) {
-
     console.error("SERVER ERROR:", err);
-
-    res.status(500).json({
-      success: false,
-      error: "Server error"
-    });
-
+    res.status(500).json({ success: false });
   }
 
 });
+
+/* SERVER */
 
 const PORT = process.env.PORT || 3000;
 
@@ -339,16 +363,11 @@ app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
 
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    return res.status(413).json({ error: err.message });
-  }
-  next(err);
-});
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+/* KEEP ALIVE */
 
 setInterval(() => {
   fetch("https://berliani-backend.onrender.com").catch(() => {});
