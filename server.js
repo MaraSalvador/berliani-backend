@@ -87,18 +87,6 @@ app.post("/send", upload.array("files"), async (req, res) => {
 
   try {
 
-    const origin = req.headers.origin;
-
-    const allowedOrigins = [
-      "https://berliani.com",
-      "https://www.berliani.com",
-      null
-    ];
-
-    if (origin && !allowedOrigins.includes(origin)) {
-      return res.status(403).json({ error: "Invalid origin" });
-    }
-
     const {
       name,
       country,
