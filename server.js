@@ -32,7 +32,7 @@ app.use("/send", limiter);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 50 * 1024 * 1024,
     files: 5,
     fields: 200,
     fieldSize: 500 * 1024
@@ -125,6 +125,9 @@ app.post("/send", upload.array("files"), async (req, res) => {
     const allowedTypes = [
       "image/jpeg",
       "image/png",
+      "video/mp4",
+      "video/quicktime",
+      "video/webm",
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -154,36 +157,14 @@ app.post("/send", upload.array("files"), async (req, res) => {
         "\n📡 ISP: " + (geoData.isp || "");
     } catch {}
 
-    const headerUserAgent = req.headers["user-agent"] || "";
-
-    let device = "Компьютер";
-    let browser = "Не определён";
-    let osName = "Не определена";
-
-    if (/iphone/i.test(headerUserAgent)) device = "iPhone";
-    else if (/android/i.test(headerUserAgent)) device = "Android";
-    else if (/ipad/i.test(headerUserAgent)) device = "iPad";
-    else if (/mac/i.test(headerUserAgent)) device = "Mac";
-    else if (/windows/i.test(headerUserAgent)) device = "Windows ПК";
-
-    if (/edg/i.test(headerUserAgent)) browser = "Edge";
-    else if (/chrome/i.test(headerUserAgent)) browser = "Chrome";
-    else if (/firefox/i.test(headerUserAgent)) browser = "Firefox";
-    else if (/safari/i.test(headerUserAgent)) browser = "Safari";
-
-    if (/iphone|ipad/i.test(headerUserAgent)) osName = "iOS";
-    else if (/android/i.test(headerUserAgent)) osName = "Android";
-    else if (/mac/i.test(headerUserAgent)) osName = "macOS";
-    else if (/windows/i.test(headerUserAgent)) osName = "Windows";
-
     const contactMethods = [];
 
     if (methodMessenger === "true") contactMethods.push("☑ Мессенджеры");
     if (whatsappSelected === "true") contactMethods.push("   ☑ WhatsApp");
     if (telegramSelected === "true") contactMethods.push("   ☑ Telegram");
     if (methodEmail === "true") contactMethods.push("☑ Электронная почта");
-    if (call === "true") contactMethods.push("☑ Позвонить по телефону");
-    if (message === "true") contactMethods.push("☑ Ответить сообщением");
+    if (call === "true") contactMethods.push("☑ Позвонить");
+    if (message === "true") contactMethods.push("☑ Сообщение");
     if (methodOther === "true") contactMethods.push("☑ Другое");
 
     const contactBlock =
@@ -191,108 +172,93 @@ app.post("/send", upload.array("files"), async (req, res) => {
         ? contactMethods.join("\n")
         : "Не указан";
 
-    const utmData = [];
-
-    if (utm_source) utmData.push("Источник: " + utm_source);
-    if (utm_medium) utmData.push("Канал: " + utm_medium);
-    if (utm_campaign) utmData.push("Кампания: " + utm_campaign);
-    if (utm_term) utmData.push("Ключевое слово: " + utm_term);
-    if (utm_content) utmData.push("Контент: " + utm_content);
-
-    const utmBlock =
-      utmData.length > 0
-        ? utmData.join("\n")
-        : "UTM отсутствуют";
-
-    const textMessage = `
-📩 Свой вопрос из раздела FAQ | сайт BERLIANI |
-
-👤 ФИО: ${name}
-🌍 Страна: ${country}
-📞 Телефон: ${phone}
-
-📧 Email: ${email || ""}
-📲 WhatsApp: ${whatsappPhone || ""} ${whatsappUsername || ""}
-📲 Telegram: ${telegramPhone || ""} ${telegramUsername || ""}
-
-🧭 Способ связи:
-${contactBlock}
-
-🌐 IP: ${ip}
-${geoText}
-
-💻 Устройство: ${device}
-🖥 ОС: ${osName}
-🌐 Браузер: ${browser}
-
-🚦 Источник трафика: ${trafficSource || ""}
-🌐 Язык: ${language || ""}
-🕒 Часовой пояс: ${timezone || ""}
-📱 Экран: ${screen || ""}
-
-🔗 Referrer: ${referrer || "direct"}
-
-🧭 Действия: ${actions || ""}
-☎ Редактирования телефона: ${phoneEdits || 0}
-⌨ Время ввода сообщения: ${typingTime || 0} сек
-
-📄 Страница: ${page || ""}
-⏱ Время на сайте: ${timeOnSite || ""} сек
-
-📊 UTM:
-${utmBlock}
-
-❓ Вопрос:
-${question}
+    const utmBlock = `
+${utm_source ? "Источник: " + utm_source : ""}
+${utm_medium ? "\nКанал: " + utm_medium : ""}
+${utm_campaign ? "\nКампания: " + utm_campaign : ""}
+${utm_term ? "\nКлюч: " + utm_term : ""}
+${utm_content ? "\nКонтент: " + utm_content : ""}
 `;
 
-    await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: textMessage
-        })
-      }
-    );
+    const textMessage = `
+📩 BERLIANI
+
+━━━━━━━━━━━━━━━
+👤 ${name}
+📞 ${phone}
+🌍 ${country}
+
+━━━━━━━━━━━━━━━
+🧭 СПОСОБ СВЯЗИ
+${contactBlock}
+
+━━━━━━━━━━━━━━━
+❓ ВОПРОС
+${question}
+
+━━━━━━━━━━━━━━━
+🌐 ${trafficSource}
+⏱ ${timeOnSite} сек
+`;
+
+    /* TELEGRAM */
+
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: textMessage
+      })
+    });
+
+    /* FILES TELEGRAM */
 
     if (req.files && req.files.length > 0) {
-
       for (const file of req.files) {
 
         const formData = new FormData();
 
         formData.append("chat_id", TELEGRAM_CHAT_ID);
 
-        formData.append(
-          "document",
-          file.buffer,
-          { filename: file.originalname }
-        );
+        const safeName = Buffer.from(file.originalname, "latin1").toString("utf8");
 
-        await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
-          {
-            method: "POST",
-            body: formData
-          }
-        );
+        formData.append("document", file.buffer, { filename: safeName });
+
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
+          method: "POST",
+          body: formData
+        });
       }
     }
 
     const attachments = (req.files || []).map(file => ({
-      filename: file.originalname,
+      filename: Buffer.from(file.originalname, "latin1").toString("utf8"),
       content: file.buffer.toString("base64"),
       encoding: "base64"
     }));
 
-    await fetch(
-      "https://api.resend.com/emails",
-      {
+    /* EMAIL ТЕБЕ */
+
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "BERLIANI <contact@mail.berliani.com>",
+        to: ["berliani@jewelry-diamonds.ru"],
+        subject: "Новая заявка BERLIANI",
+        text: textMessage,
+        attachments: attachments
+      })
+    });
+
+    /* АВТООТВЕТ */
+
+    if (email) {
+      await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.RESEND_KEY}`,
@@ -300,13 +266,65 @@ ${question}
         },
         body: JSON.stringify({
           from: "BERLIANI <contact@mail.berliani.com>",
-          to: ["berliani@jewelry-diamonds.ru"],
-          subject: "Новая заявка BERLIANI",
-          text: textMessage,
-          attachments: attachments
+          to: [email],
+          subject: "BERLIANI — Ваш запрос получен",
+          html: `
+<div style="
+  background:#ffffff;
+  font-family: 'Times New Roman', serif;
+  max-width:520px;
+  margin:auto;
+  padding:80px 40px;
+  text-align:center;
+  color:#000;
+">
+
+  <div style="
+    font-size:18px;
+    letter-spacing:0.3em;
+    margin-bottom:60px;
+  ">
+    BERLIANI
+  </div>
+
+  <div style="
+    font-size:24px;
+    margin-bottom:20px;
+  ">
+    Благодарим за обращение
+  </div>
+
+  <div style="
+    font-size:15px;
+    color:#444;
+    margin-bottom:60px;
+    line-height:1.8;
+  ">
+    Ваш запрос успешно получен.<br>
+    Персональный менеджер свяжется с Вами<br>
+    в ближайшее время.
+  </div>
+
+  <div style="
+    width:60px;
+    height:1px;
+    background:#000;
+    margin:0 auto 60px;
+  "></div>
+
+  <div style="
+    font-size:11px;
+    letter-spacing:0.3em;
+    color:#999;
+  ">
+    JEWELRY & DIAMONDS
+  </div>
+
+</div>
+`
         })
-      }
-    );
+      });
+    }
 
     res.json({ success: true });
 
@@ -341,8 +359,5 @@ app.listen(PORT, () => {
 });
 
 setInterval(() => {
-
-  fetch("https://berliani-backend.onrender.com")
-    .catch(() => {});
-
+  fetch("https://berliani-backend.onrender.com").catch(() => {});
 }, 14 * 60 * 1000);
