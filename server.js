@@ -127,20 +127,20 @@ app.post("/send", upload.array("files"), async (req, res) => {
       return res.status(400).json({ error: "Invalid request" });
     }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "video/mp4",
-      "video/quicktime",
-      "video/webm",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ];
+    const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+];
 
     if (req.files) {
       for (const file of req.files) {
-        if (!allowedTypes.includes(file.mimetype)) {
+        if (!ALLOWED_TYPES.includes(file.mimetype)) {
           return res.status(400).json({ error: "Invalid file type" });
         }
       }
@@ -154,7 +154,7 @@ app.post("/send", upload.array("files"), async (req, res) => {
     let geoText = "";
 
     try {
-      const geoRes = await fetch(`https://ip-api.com/json/${ip}`);
+      const geoRes = await safeFetch(`https://ip-api.com/json/${ip}`);
       const geoData = await geoRes.json();
 
       geoText =
