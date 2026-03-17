@@ -7,6 +7,27 @@ import http from "http";
 import https from "https";
 import rateLimit from "express-rate-limit";
 
+async function safeFetch(url, options = {}, timeout = 5000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+
+    if (!res.ok) {
+      throw new Error("Fetch failed");
+    }
+
+    return res;
+
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
@@ -59,8 +80,6 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-const recentPhones = new Map();
 
 /* FORM ENDPOINT */
 
@@ -119,15 +138,6 @@ app.post("/send", upload.array("files"), async (req, res) => {
     if (!name || !phone || !question) {
       return res.status(400).json({ error: "Invalid request" });
     }
-
-    const now = Date.now();
-    const last = recentPhones.get(phone);
-
-    if (last && now - last < 60000) {
-      return res.status(429).json({ error: "Too many requests" });
-    }
-
-    recentPhones.set(phone, now);
 
     const allowedTypes = [
       "image/jpeg",
@@ -235,7 +245,7 @@ ${utmBlock || '—'}
 
     /* TELEGRAM */
 
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -255,7 +265,7 @@ ${utmBlock || '—'}
         formData.append("chat_id", TELEGRAM_CHAT_ID);
         formData.append("document", file.buffer, { filename: safeName });
 
-        return fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
+        return safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
           method: "POST",
           body: formData
         });
@@ -271,7 +281,7 @@ ${utmBlock || '—'}
 
     /* EMAIL ТЕБЕ */
 
-    await fetch("https://api.resend.com/emails", {
+    await safeFetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.RESEND_KEY}`,
@@ -289,7 +299,7 @@ ${utmBlock || '—'}
     /* АВТООТВЕТ */
 
     if (email) {
-      await fetch("https://api.resend.com/emails", {
+      await safeFetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.RESEND_KEY}`,
