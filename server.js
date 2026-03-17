@@ -39,8 +39,19 @@ const upload = multer({
   }
 });
 
+const allowedOrigins = [
+  "https://berliani.com",
+  "https://www.berliani.com"
+];
+
 app.use(cors({
-  origin: ["https://berliani.com", "https://www.berliani.com"]
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Not allowed by CORS"));
+    }
+  }
 }));
 
 app.use(express.json({ limit: "1mb" }));
@@ -67,10 +78,6 @@ app.post("/send", upload.array("files"), async (req, res) => {
 
     if (origin && !allowedOrigins.includes(origin)) {
       return res.status(403).json({ error: "Invalid origin" });
-    }
-
-    if (req.headers["x-form-secret"] !== process.env.FORM_SECRET) {
-      return res.status(403).json({ error: "Forbidden" });
     }
 
     const {
@@ -149,7 +156,7 @@ app.post("/send", upload.array("files"), async (req, res) => {
     let geoText = "";
 
     try {
-      const geoRes = await fetch(`http://ip-api.com/json/${ip}`);
+      const geoRes = await fetch(`https://ip-api.com/json/${ip}`);
       const geoData = await geoRes.json();
 
       geoText =
