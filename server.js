@@ -199,20 +199,34 @@ ${question}
 ━━━━━━━━━━━━━━━
 🌐 ${trafficSource}
 ⏱ ${timeOnSite} сек
+
+━━━━━━━━━━━━━━━
+📍 GEO
+${geoText || '-'}
+
+━━━━━━━━━━━━━━━
+📊 АНАЛИТИКА
+
+📄 Страница: ${page || '-'}
+🔗 Реферер: ${referrer || '-'}
+🧠 Действия: ${actions || '-'}
+✍️ Ввод: ${typingTime || 0} сек
+📱 Правки телефона: ${phoneEdits || 0}
+
+━━━━━━━━━━━━━━━
+💻 УСТРОЙСТВО
+
+🖥 ${platform || '-'}
+📐 ${screen || '-'}
+🌍 ${language || '-'}
+⏰ ${timezone || '-'}
+
+━━━━━━━━━━━━━━━
+📢 UTM
+${utmBlock || '—'}
 `;
 
     /* TELEGRAM */
-
-    if (telegramUsername) {
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: telegramUsername.replace("@",""),
-      text: "Благодарим за обращение. Мы скоро свяжемся с Вами."
-    })
-  });
-}
 
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
@@ -226,21 +240,20 @@ ${question}
     /* FILES TELEGRAM */
 
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
+      await Promise.all(req.files.map(file => {
 
         const formData = new FormData();
-
-        formData.append("chat_id", TELEGRAM_CHAT_ID);
-
         const safeName = Buffer.from(file.originalname, "latin1").toString("utf8");
 
+        formData.append("chat_id", TELEGRAM_CHAT_ID);
         formData.append("document", file.buffer, { filename: safeName });
 
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
+        return fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
           method: "POST",
           body: formData
         });
-      }
+
+      }));
     }
 
     const attachments = (req.files || []).map(file => ({
@@ -276,61 +289,24 @@ ${question}
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          from: "BERLIANI <contact@mail.berliani.com>",
+          from: "BERLIANI <privilege@berliani.com>",
           to: [email],
           subject: "BERLIANI — Ваш запрос получен",
           html: `
-<div style="
-  background:#ffffff;
-  font-family: 'Times New Roman', serif;
-  max-width:520px;
-  margin:auto;
-  padding:80px 40px;
-  text-align:center;
-  color:#000;
-">
-
-  <div style="
-    font-size:18px;
-    letter-spacing:0.3em;
-    margin-bottom:60px;
-  ">
-    BERLIANI
-  </div>
-
-  <div style="
-    font-size:24px;
-    margin-bottom:20px;
-  ">
-    Благодарим за обращение
-  </div>
-
-  <div style="
-    font-size:15px;
-    color:#444;
-    margin-bottom:60px;
-    line-height:1.8;
-  ">
-    Ваш запрос успешно получен.<br>
-    Персональный менеджер свяжется с Вами<br>
-    в ближайшее время.
-  </div>
-
-  <div style="
-    width:60px;
-    height:1px;
-    background:#000;
-    margin:0 auto 60px;
-  "></div>
-
-  <div style="
-    font-size:11px;
-    letter-spacing:0.3em;
-    color:#999;
-  ">
-    JEWELRY & DIAMONDS
-  </div>
-
+<div style="background:#ffffff;font-family:'Times New Roman',serif;max-width:520px;margin:auto;padding:80px 40px;text-align:center;color:#000;">
+<div style="font-size:18px;letter-spacing:0.3em;margin-bottom:60px;">BERLIANI</div>
+<div style="font-size:24px;margin-bottom:20px;">Благодарим за обращение</div>
+<div style="font-size:15px;color:#444;margin-bottom:40px;line-height:1.8;">
+Ваш запрос успешно получен.<br>
+Персональный менеджер свяжется с Вами<br>
+в ближайшее время.
+</div>
+<div style="font-size:12px;color:#777;line-height:1.7;margin-bottom:60px;">
+Данное сообщение отправлено с автоматизированного адреса.<br>
+Входящие ответы на данный электронный адрес не обрабатываются.<br>
+Для связи, пожалуйста, используйте официальный канал, указанный на сайте.
+</div>
+<div style="font-size:11px;letter-spacing:0.3em;color:#999;">JEWELRY & DIAMONDS</div>
 </div>
 `
         })
