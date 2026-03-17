@@ -203,6 +203,17 @@ ${question}
 
     /* TELEGRAM */
 
+    if (telegramUsername) {
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: telegramUsername.replace("@",""),
+      text: "Благодарим за обращение. Мы скоро свяжемся с Вами."
+    })
+  });
+}
+
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
