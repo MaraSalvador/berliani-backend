@@ -316,7 +316,7 @@ ${utmBlock || '—'}
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        from: "BERLIANI <contact@mail.berliani.com>",
+        from: "BERLIANI <privilege@berliani.com>",
         to: ["berliani@jewelry-diamonds.ru"],
         subject: "Новая заявка BERLIANI",
         text: textMessage,
@@ -334,7 +334,7 @@ if (email) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      from: "BERLIANI <contact@mail.berliani.com>",
+      from: "BERLIANI <privilege@berliani.com>",
       to: [email],
       subject: "Подтверждение обращения",
       html: `
