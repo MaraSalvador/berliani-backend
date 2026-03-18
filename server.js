@@ -277,24 +277,29 @@ ${utmBlock || '—'}
 
     if (req.files && req.files.length > 0) {
 
-      const media = req.files.map(file => ({
-        type: "document",
-        media: "attach://" + file.originalname
-      }));
+  const media = req.files.map(file => {
+    const decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
 
-      const formData = new FormData();
-      formData.append("chat_id", TELEGRAM_CHAT_ID);
-      formData.append("media", JSON.stringify(media));
+    return {
+      type: "document",
+      media: "attach://" + decodedName
+    };
+  });
 
-      req.files.forEach(file => {
-        formData.append(file.originalname, file.buffer, file.originalname);
-      });
+  const formData = new FormData();
+  formData.append("chat_id", TELEGRAM_CHAT_ID);
+  formData.append("media", JSON.stringify(media));
 
-      await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`, {
-        method: "POST",
-        body: formData
-      });
-    }
+  req.files.forEach(file => {
+    const decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    formData.append(decodedName, file.buffer, decodedName);
+  });
+
+  await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`, {
+    method: "POST",
+    body: formData
+  });
+}
 
     /* EMAIL */
 
@@ -319,32 +324,49 @@ ${utmBlock || '—'}
       })
     });
 
-    /* AUTO EMAIL */
+/* AUTO EMAIL */
 
-    if (email) {
-      await safeFetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          from: "BERLIANI <privilege@berliani.com>",
-          to: [email],
-          subject: "BERLIANI — Ваш запрос получен",
-          html: `
+if (email) {
+  await safeFetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: "BERLIANI <contact@mail.berliani.com>",
+      to: [email],
+      subject: "Подтверждение обращения",
+      html: `
 <div style="background:#ffffff;font-family:'Times New Roman',serif;max-width:520px;margin:auto;padding:80px 40px;text-align:center;color:#000;">
-<div style="font-size:18px;letter-spacing:0.3em;margin-bottom:60px;">BERLIANI</div>
-<div style="font-size:24px;margin-bottom:20px;">Благодарим за обращение</div>
-<div style="font-size:15px;color:#444;margin-bottom:40px;line-height:1.8;">
-Ваш запрос успешно получен.<br>
-Менеджер свяжется с Вами в ближайшее время.
+
+<div style="font-size:18px;letter-spacing:0.3em;margin-bottom:60px;">
+BERLIANI
 </div>
+
+<div style="font-size:22px;margin-bottom:24px;">
+Благодарим Вас за обращение
+</div>
+
+<div style="font-size:15px;color:#444;margin-bottom:40px;line-height:1.8;">
+Ваш запрос получен.<br>
+Персональный менеджер свяжется с Вами в ближайшее время.
+</div>
+
+<div style="font-size:12px;color:#777;line-height:1.7;margin-bottom:60px;">
+Данное письмо сформировано автоматически.<br>
+Пожалуйста, не отвечайте на него — адрес предназначен только для отправки уведомлений.
+</div>
+
+<div style="font-size:11px;letter-spacing:0.3em;color:#999;">
+JEWELRY & DIAMONDS
+</div>
+
 </div>
 `
-        })
-      });
-    }
+    })
+  });
+}
 
     res.json({ success: true });
 
