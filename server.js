@@ -309,22 +309,6 @@ ${utmBlock || '—'}
       encoding: "base64"
     }));
 
-    await safeFetch("https://api.resend.com/emails", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${process.env.RESEND_KEY}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    from: "BERLIANI <privilege@berliani.com>",
-    to: ["berliani@jewelry-diamonds.ru"],
-    reply_to: `${name} <${email}>` || "privilege@berliani.com",
-    subject: "Новая заявка BERLIANI",
-    text: textMessage,
-    attachments: attachments
-  })
-});
-
 /* AUTO EMAIL */
 
 if (email) {
