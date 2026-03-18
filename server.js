@@ -275,19 +275,26 @@ await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
 
 /* ADMIN EMAIL */
 
-await safeFetch("https://api.resend.com/emails", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${process.env.RESEND_KEY}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    from: "BERLIANI <privilege@berliani.com>",
-    to: ["berliani@jewelry-diamonds.ru"],
-    subject: "Новая заявка BERLIANI",
-    text: textMessage
-  })
-});
+try {
+  const r = await safeFetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: "BERLIANI <privilege@berliani.com>",
+      to: ["berliani@jewelry-diamonds.ru"],
+      subject: "Новая заявка BERLIANI",
+      text: textMessage
+    })
+  });
+
+  console.log("EMAIL SENT:", r.status);
+
+} catch (e) {
+  console.error("EMAIL ERROR:", e);
+}
 
 /* TELEGRAM FILES (ONE MESSAGE) */
 
