@@ -262,20 +262,36 @@ ${geoText}
 ${utmBlock || '—'}
 `;
 
-    /* TELEGRAM TEXT */
+   /* TELEGRAM TEXT */
 
-    await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: textMessage
-      })
-    });
+await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    chat_id: TELEGRAM_CHAT_ID,
+    text: textMessage
+  })
+});
 
-    /* TELEGRAM FILES (ONE MESSAGE) */
+/* ADMIN EMAIL */
 
-    if (req.files && req.files.length > 0) {
+await safeFetch("https://api.resend.com/emails", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.RESEND_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    from: "BERLIANI <privilege@berliani.com>",
+    to: ["berliani@jewelry-diamonds.ru"],
+    subject: "Новая заявка BERLIANI",
+    text: textMessage
+  })
+});
+
+/* TELEGRAM FILES (ONE MESSAGE) */
+
+if (req.files && req.files.length > 0) {
 
   const media = req.files.map(file => {
     const decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
