@@ -310,19 +310,20 @@ ${utmBlock || '—'}
     }));
 
     await safeFetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: "BERLIANI <privilege@berliani.com>",
-        to: ["berliani@jewelry-diamonds.ru"],
-        subject: "Новая заявка BERLIANI",
-        text: textMessage,
-        attachments: attachments
-      })
-    });
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.RESEND_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    from: "BERLIANI <privilege@berliani.com>",
+    to: ["berliani@jewelry-diamonds.ru"],
+    reply_to: `${name} <${email}>` || "privilege@berliani.com",
+    subject: "Новая заявка BERLIANI",
+    text: textMessage,
+    attachments: attachments
+  })
+});
 
 /* AUTO EMAIL */
 
@@ -334,10 +335,11 @@ if (email) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      from: "BERLIANI <privilege@berliani.com>",
-      to: [email],
-      subject: "Подтверждение обращения",
-      html: `
+  from: "BERLIANI <privilege@berliani.com>",
+  to: [email],
+  reply_to: "privilege@berliani.com",
+  subject: "Подтверждение обращения",
+  html: `
 <div style="background:#ffffff;font-family:'Times New Roman',serif;max-width:520px;margin:auto;padding:80px 40px;text-align:center;color:#000;">
 
 <div style="font-size:18px;letter-spacing:0.3em;margin-bottom:60px;">
