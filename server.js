@@ -129,6 +129,7 @@ app.post("/send", upload.array("files"), async (req, res) => {
     const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
+  "image/webp",
   "image/heic",
   "image/heif",
   "video/mp4",
