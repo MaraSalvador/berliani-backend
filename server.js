@@ -127,15 +127,17 @@ app.post("/send", upload.array("files"), async (req, res) => {
     /* FILE VALIDATION */
 
     const ALLOWED_TYPES = [
-      "image/jpeg",
-      "image/png",
-      "video/mp4",
-      "video/quicktime",
-      "video/webm",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ];
+  "image/jpeg",
+  "image/png",
+  "image/heic",
+  "image/heif",
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+];
 
     if (req.files) {
       for (const file of req.files) {
