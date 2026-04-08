@@ -311,49 +311,47 @@ try {
   console.error("EMAIL ERROR:", e);
 }
 
-/* TELEGRAM FILES (ONE MESSAGE) */
+/* TELEGRAM FILES */
 
 if (req.files && req.files.length > 0) {
 
-  const media = req.files.map(file => {
+  for (const file of req.files) {
+
+    const formData = new FormData();
+
     const decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
 
-    return {
-      type: "document",
-      media: "attach://" + decodedName
-    };
-  });
+    formData.append("chat_id", TELEGRAM_CHAT_ID);
+    formData.append("document", file.buffer, decodedName);
 
-  const formData = new FormData();
-  formData.append("chat_id", TELEGRAM_CHAT_ID);
-  formData.append("media", JSON.stringify(media));
+    await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
+      method: "POST",
+      body: formData
+    });
 
-  req.files.forEach(file => {
-    const decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-    formData.append(decodedName, file.buffer, decodedName);
-  });
+  }
 
-  await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup`, {
-    method: "POST",
-    body: formData
-  });
 }
 
 /* AUTO EMAIL */
 
+console.log("USER EMAIL:", email);
+
 if (email) {
-  await safeFetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-  from: "BERLIANI <privilege@berliani.com>",
-  to: [email],
-  reply_to: "privilege@berliani.com",
-  subject: "Подтверждение обращения",
-  html: `
+  try {
+
+    const r = await safeFetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "BERLIANI <privilege@berliani.com>",
+        to: [email],
+        reply_to: "privilege@berliani.com",
+        subject: "BERLIANI — Confirmation",
+        html: `
 <div style="background:#ffffff;font-family:'Times New Roman',serif;max-width:520px;margin:auto;padding:80px 40px;text-align:center;color:#000;">
 
 <div style="font-size:18px;letter-spacing:0.3em;margin-bottom:60px;">
@@ -379,8 +377,14 @@ JEWELRY & DIAMONDS
 
 </div>
 `
-    })
-  });
+      })
+    });
+
+    console.log("AUTO EMAIL SENT:", r.status);
+
+  } catch (e) {
+    console.error("AUTO EMAIL ERROR:", e);
+  }
 }
 
     res.json({ success: true });
