@@ -141,12 +141,16 @@ app.post("/send", upload.array("files"), async (req, res) => {
 ];
 
     if (req.files) {
-      for (const file of req.files) {
-        if (!ALLOWED_TYPES.includes(file.mimetype)) {
-          return res.status(400).json({ error: "Invalid file type" });
-        }
-      }
+  for (const file of req.files) {
+    if (
+      !ALLOWED_TYPES.includes(file.mimetype) &&
+      !file.originalname.toLowerCase().endsWith('.heic') &&
+      !file.originalname.toLowerCase().endsWith('.heif')
+    ) {
+      return res.status(400).json({ error: "Invalid file type" });
     }
+  }
+}
 
     /* IP */
 
