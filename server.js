@@ -50,7 +50,7 @@ app.use("/send", limiter);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024,
+    fileSize: 20 * 1024 * 1024,
     files: 5,
     fields: 200,
     fieldSize: 500 * 1024
@@ -281,6 +281,12 @@ await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
   })
 });
 
+const attachments = (req.files || []).map(file => ({
+  filename: Buffer.from(file.originalname, "latin1").toString("utf8"),
+  content: file.buffer.toString("base64"),
+  encoding: "base64"
+}));
+
 /* ADMIN EMAIL */
 
 try {
@@ -291,11 +297,12 @@ try {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      from: "BERLIANI <privilege@berliani.com>",
-      to: ["berliani@jewelry-diamonds.ru"],
-      subject: "BERLIANI | Client Request",
-      text: textMessage
-    })
+  from: "BERLIANI <privilege@berliani.com>",
+  to: ["berliani@jewelry-diamonds.ru"],
+  subject: "BERLIANI — Exclusive Client Request",
+  text: textMessage,
+  attachments: attachments
+})
   });
 
   console.log("EMAIL SENT:", r.status);
@@ -331,14 +338,6 @@ if (req.files && req.files.length > 0) {
     body: formData
   });
 }
-
-    /* EMAIL */
-
-    const attachments = (req.files || []).map(file => ({
-      filename: Buffer.from(file.originalname, "latin1").toString("utf8"),
-      content: file.buffer.toString("base64"),
-      encoding: "base64"
-    }));
 
 /* AUTO EMAIL */
 
