@@ -216,56 +216,57 @@ ${utm_content ? "\nКонтент: " + utm_content : ""}
     /* MESSAGE */
 
     const textMessage = `
-📩 FAQ from site BERLIANI
+WWW.BERLIANI.COM
+ЗАПРОС С САЙТА | REQUEST FROM THE WEBSITE
+━━━━━━━━━━━━━━━━━━━
 
-━━━━━━━━━━━━━━━
-🗓 ${now}
+· ДАТА И ВРЕМЯ ОТПРАВКИ ЗАПРОСА / DATE AND TIME OF THE REQUEST · ${now}
 
-👤 ${name}
-📞 ${phone}
-📧 ${email || '-'}
-🌍 ${country || '-'}
+Имя и фамилия / First & Last Name: ${name}
+Номер телефона / Phone Number: ${phone}
+Электронная почта / Email: ${email || '-'}
+Страна / Country: ${country || '-'}
 
-━━━━━━━━━━━━━━━
-📲 КОНТАКТЫ
+━━━━━━━━━━━━━━━━━━━
+· КОНТАКТЫ / CONTACT ·
 ${messengersBlock || '-'}
 
-━━━━━━━━━━━━━━━
-🧭 СПОСОБ СВЯЗИ
+━━━━━━━━━━━━━━━━━━━
+· СПОСОБЫ ОБРАТНОЙ СВЯЗИ / CONTACT METHODS ·
 ${contactBlock}
 
-━━━━━━━━━━━━━━━
-❓ ВОПРОС
+━━━━━━━━━━━━━━━━━━━
+· ТЕКСТ ЗАПРОСА / MESSAGE ·
 ${question}
 
-━━━━━━━━━━━━━━━
-🌐 ${trafficSource}
-⏱ ${timeOnSite} сек
+━━━━━━━━━━━━━━━━━━━
+ИСТОЧНИК ТРАФИКА / TRAFFIC SOURCE: ${trafficSource}
+ВРЕМЯ НА САЙТЕ / TIME ON SITE: ${timeOnSite} сек
 
-━━━━━━━━━━━━━━━
-📍 GEO
+━━━━━━━━━━━━━━━━━━━
+МЕСТОПОЛОЖЕНИЕ / LOCATION:
 ${geoText}
 
-━━━━━━━━━━━━━━━
-📊 АНАЛИТИКА
+━━━━━━━━━━━━━━━━━━━
+АНАЛИТИКА / ANALYTICS
 
-📄 ${page || '-'}
-🔗 ${referrer || '-'}
-🧠 ${actions || '-'}
-✍️ ${typingTime || 0} сек
-📱 ${phoneEdits || 0}
-🧠 UA: ${userAgent || '-'}
+Страница формы / Form Page: ${page || '-'}
+Источник перехода / Referrer: ${referrer || '-'}
+Действия пользователя / User Actions: ${actions || '-'}
+Время набора / Typing Time: ${typingTime || 0} сек
+Количество правок / Number of Edits: ${phoneEdits || 0}
+Браузер пользователя / User Agent: ${userAgent || '-'}
 
-━━━━━━━━━━━━━━━
-💻 УСТРОЙСТВО
+━━━━━━━━━━━━━━━━━━━
+УСТРОЙСТВО / DEVICE
 
-🖥 ${platform || '-'}
-📐 ${screen || '-'}
-🌍 ${language || '-'}
-⏰ ${timezone || '-'}
+ОС устройства / Operating System: ${platform || '-'}
+Разрешение экрана / Screen Resolution: ${screen || '-'}
+Язык интерфейса / Language: ${language || '-'}
+Часовой пояс / Timezone: ${timezone || '-'}
 
-━━━━━━━━━━━━━━━
-📢 UTM
+━━━━━━━━━━━━━━━━━━━
+UTM-МЕТКИ / UTM TAGS:
 ${utmBlock || '—'}
 `;
 
@@ -292,7 +293,7 @@ try {
     body: JSON.stringify({
       from: "BERLIANI <privilege@berliani.com>",
       to: ["berliani@jewelry-diamonds.ru"],
-      subject: "Новая заявка BERLIANI",
+      subject: "BERLIANI | Client Request",
       text: textMessage
     })
   });
