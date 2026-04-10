@@ -17,8 +17,6 @@ async function safeFetch(url, options = {}, timeout = 60000) {
       signal: controller.signal
     });
 
-    if (!res.ok) throw new Error("Fetch failed");
-
     return res;
   } finally {
     clearTimeout(id);
