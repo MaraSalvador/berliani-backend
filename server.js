@@ -29,6 +29,7 @@ http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
 const app = express();
+const countryNames = new Intl.DisplayNames(['ru'], { type: 'region' });
 
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
@@ -155,23 +156,34 @@ app.post("/send", upload.array("files"), async (req, res) => {
     /* IP */
 
     const ip =
-      req.headers["x-real-ip"] ||
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      req.socket.remoteAddress ||
-      "";
+  (req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim() ||
+  req.headers["x-real-ip"] ||
+  req.connection?.remoteAddress ||
+  req.socket?.remoteAddress ||
+  "";
 
     /* GEO */
 
-    let geoText = "-";
+let geoText = "-";
+let geoData = {};
 
+try {
+  if (ip && ip !== '127.0.0.1' && ip !== '::1') {
     try {
-      const geoRes = await safeFetch(`https://ipapi.co/${ip}/json/`);
-      const geoData = await geoRes.json();
-
-      geoText =
-        "📍 " + (geoData.city || "") + ", " + (geoData.country_name || "") +
-        "\n📡 ISP: " + (geoData.org || "");
+      const geoRes = await safeFetch(`https://ipapi.co/${ip}/json/`, {}, 3000);
+      geoData = await geoRes.json();
     } catch {}
+  }
+
+  geoText =
+    geoData?.country_name
+      ? "📍 " + (geoData.city || "") + ", " + geoData.country_name +
+        "\n📡 ISP: " + (geoData.org || "")
+      : "IP: " + (ip || "unknown");
+
+} catch {}
 
     /* CONTACT METHODS */
 
@@ -225,7 +237,7 @@ WWW.BERLIANI.COM
 Имя и фамилия / First & Last Name: ${name}
 Номер телефона / Phone Number: ${phone}
 Электронная почта / Email: ${email || '-'}
-Страна / Country: ${country || '-'}
+Страна / Country: ${country ? (countryNames.of(country) || country) : '-'}
 
 ━━━━━━━━━━━━━━━━━━━
 · КОНТАКТЫ / CONTACT ·
