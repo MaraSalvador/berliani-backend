@@ -425,10 +425,13 @@ if (req.files && req.files.length > 0) {
     formData.append("chat_id", TELEGRAM_CHAT_ID);
     formData.append("document", file.buffer, decodedName);
 
-    await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
-      method: "POST",
-      body: formData
-    });
+    const tgFileRes = await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
+  method: "POST",
+  body: formData
+});
+
+const tgFileData = await tgFileRes.json();
+console.log("TG FILE RESPONSE:", tgFileData);
 
   }
 
@@ -437,7 +440,6 @@ if (req.files && req.files.length > 0) {
 /* AUTO EMAIL */
 
 console.log("USER EMAIL:", email);
-
 if (email) {
   try {
 
@@ -453,6 +455,7 @@ if (email) {
         reply_to: "privilege@berliani.com",
         subject: "BERLIANI — Confirmation",
         html: `
+        
 <div style="background:#ffffff;font-family:'Times New Roman',serif;max-width:520px;margin:auto;padding:80px 40px;text-align:center;color:#000;">
 
 <div style="font-size:18px;letter-spacing:0.3em;margin-bottom:60px;">
@@ -481,13 +484,14 @@ JEWELRY & DIAMONDS
       })
     });
 
-    console.log("AUTO EMAIL SENT:", r.status);
+    const data = await r.json();   // ← ВОТ ЭТОГО У ТЕБЯ НЕ БЫЛО
+    console.log("AUTO EMAIL RESPONSE:", data);
 
   } catch (e) {
     console.error("AUTO EMAIL ERROR:", e);
   }
 }
-
+    
     res.json({ success: true });
 
   } catch (err) {
