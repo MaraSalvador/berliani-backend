@@ -7,7 +7,7 @@ import http from "http";
 import https from "https";
 import rateLimit from "express-rate-limit";
 
-async function safeFetch(url, options = {}, timeout = 5000) {
+async function safeFetch(url, options = {}, timeout = 15000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
@@ -373,14 +373,18 @@ ${utmBlock || '—'}
 
    /* TELEGRAM TEXT */
 
-await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    chat_id: TELEGRAM_CHAT_ID,
-    text: textMessage
-  })
-});
+try {
+  await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: textMessage
+    })
+  });
+} catch (e) {
+  console.error("TELEGRAM TEXT ERROR:", e);
+}
 
 const attachments = (req.files || []).map(file => ({
   filename: Buffer.from(file.originalname, "latin1").toString("utf8"),
@@ -425,13 +429,22 @@ if (req.files && req.files.length > 0) {
     formData.append("chat_id", TELEGRAM_CHAT_ID);
     formData.append("document", file.buffer, decodedName);
 
-    const tgFileRes = await safeFetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
-  method: "POST",
-  body: formData
-});
+    try {
 
-const tgFileData = await tgFileRes.json();
-console.log("TG FILE RESPONSE:", tgFileData);
+      const tgFileRes = await safeFetch(
+        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+      const tgFileData = await tgFileRes.json();
+      console.log("TG FILE RESPONSE:", tgFileData);
+
+    } catch (e) {
+      console.error("TG FILE ERROR:", e);
+    }
 
   }
 
