@@ -79,6 +79,57 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+function parseUserAgent(ua = "") {
+  ua = ua.toLowerCase();
+
+  let os = "Unknown";
+  if (ua.includes("windows")) os = "Windows";
+  else if (ua.includes("mac os")) os = "macOS";
+  else if (ua.includes("android")) os = "Android";
+  else if (ua.includes("iphone") || ua.includes("ipad")) os = "iOS";
+
+  let browser = "Unknown";
+  let version = "";
+
+  const match =
+    ua.match(/chrome\/([\d.]+)/) ||
+    ua.match(/firefox\/([\d.]+)/) ||
+    ua.match(/version\/([\d.]+).*safari/) ||
+    ua.match(/edg\/([\d.]+)/);
+
+  if (ua.includes("chrome") && !ua.includes("edg")) browser = "Chrome";
+  else if (ua.includes("firefox")) browser = "Firefox";
+  else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
+  else if (ua.includes("edg")) browser = "Edge";
+
+  if (match) version = match[1];
+
+  let device = "Desktop";
+  let model = "—";
+
+  if (ua.includes("iphone")) {
+    device = "iPhone";
+    model = "iPhone";
+  } else if (ua.includes("ipad")) {
+    device = "iPad";
+    model = "iPad";
+  } else if (ua.includes("android")) {
+    device = "Android";
+    const m = ua.match(/android.*;\s?([^)]+)\)/);
+    if (m) model = m[1];
+  } else if (ua.includes("macintosh")) {
+    device = "Mac";
+    model = "Mac";
+  }
+
+  const isBot =
+    ua.includes("bot") ||
+    ua.includes("crawler") ||
+    ua.includes("spider");
+
+  return { os, browser, version, device, model, type: isBot ? "Bot" : "User" };
+}
+
 /* FORM */
 
 app.post("/send", upload.array("files"), async (req, res) => {
@@ -225,8 +276,10 @@ ${utm_term ? "\nКлюч: " + utm_term : ""}
 ${utm_content ? "\nКонтент: " + utm_content : ""}
 `;
 
+    const uaParsed = parseUserAgent(
+  userAgent || req.headers["user-agent"] || ""
+);
     /* MESSAGE */
-
     const textMessage = `
 WWW.BERLIANI.COM
 ЗАПРОС С САЙТА | REQUEST FROM THE WEBSITE
@@ -267,7 +320,11 @@ ${geoText}
 Действия пользователя / User Actions: ${actions || '-'}
 Время набора / Typing Time: ${typingTime || 0} сек
 Количество правок / Number of Edits: ${phoneEdits || 0}
-Браузер пользователя / User Agent: ${userAgent || '-'}
+Браузер: ${uaParsed.browser} ${uaParsed.version}
+ОС: ${uaParsed.os}
+Устройство: ${uaParsed.device}
+Модель: ${uaParsed.model}
+Тип: ${uaParsed.type}
 
 ━━━━━━━━━━━━━━━━━━━
 УСТРОЙСТВО / DEVICE
