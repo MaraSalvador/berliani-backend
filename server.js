@@ -7,7 +7,7 @@ import http from "http";
 import https from "https";
 import rateLimit from "express-rate-limit";
 
-async function safeFetch(url, options = {}, timeout = 15000) {
+async function safeFetch(url, options = {}, timeout = 60000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
@@ -444,7 +444,7 @@ if (req.files && req.files.length > 0) {
       console.log("TG FILE RESPONSE:", tgFileData);
 
     } catch (e) {
-      console.error("TG FILE ERROR:", e);
+      console.error("TG FILE ERROR:", decodedName, e);
     }
 
   }
