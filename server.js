@@ -432,20 +432,22 @@ if (req.files && req.files.length > 0) {
     try {
 
       const tgFileRes = await safeFetch(
-  `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
-  {
-    method: "POST",
-    body: formData
-  },
-  30000
-);
+        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
+        {
+          method: "POST",
+          body: formData
+        },
+        30000
+      );
 
       const tgFileData = await tgFileRes.json();
-      console.log("TG FILE RESPONSE:", tgFileData);
+      console.log("TG FILE OK:", decodedName, tgFileData);
 
     } catch (e) {
       console.error("TG FILE ERROR:", decodedName, e);
     }
+
+    await new Promise(r => setTimeout(r, 300)); // ← ВОТ ЭТО ДОБАВИЛ
 
   }
 
