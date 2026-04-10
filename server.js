@@ -79,6 +79,13 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+function escapeHTML(str = "") {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function parseUserAgent(ua = "") {
   ua = ua.toLowerCase();
 
@@ -169,12 +176,32 @@ app.post("/send", upload.array("files"), async (req, res) => {
       trafficSource,
       actions,
       phoneEdits,
-      typingTime
+      typingTime,
+      company
     } = req.body;
 
-    if (!name || !phone || !question) {
-      return res.status(400).json({ error: "Invalid request" });
+        // === VALIDATION ===
+
+    if (!name || name.trim().length < 2 || name.length > 100) {
+      return res.status(400).json({ error: "Invalid name" });
     }
+
+    if (!question || question.trim().length < 10 || question.length > 2000) {
+      return res.status(400).json({ error: "Invalid question" });
+    }
+
+    if (!/^\+\d{6,15}$/.test(phone)) {
+      return res.status(400).json({ error: "Invalid phone" });
+    }
+
+    if (email && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
+      return res.status(400).json({ error: "Invalid email" });
+    }
+
+    // === BOT CHECK ===
+if (company && company.trim() !== "") {
+  return res.status(400).json({ error: "Bot detected" });
+}
 
     /* FILE VALIDATION */
 
@@ -279,6 +306,11 @@ ${utm_content ? "\nКонтент: " + utm_content : ""}
     const uaParsed = parseUserAgent(
   userAgent || req.headers["user-agent"] || ""
 );
+
+    const safeName = escapeHTML(name);
+const safeQuestion = escapeHTML(question);
+const safeEmail = escapeHTML(email || "");
+    
     /* MESSAGE */
     const textMessage = `
 WWW.BERLIANI.COM
@@ -287,9 +319,9 @@ WWW.BERLIANI.COM
 
 · ДАТА И ВРЕМЯ ОТПРАВКИ ЗАПРОСА / DATE AND TIME OF THE REQUEST · ${now}
 
-Имя и фамилия / First & Last Name: ${name}
+Имя и фамилия / First & Last Name: ${safeName}
 Номер телефона / Phone Number: ${phone}
-Электронная почта / Email: ${email || '-'}
+Электронная почта / Email: ${safeEmail || '-'}
 Страна / Country: ${country ? (countryNames.of(country) || country) : '-'}
 
 ━━━━━━━━━━━━━━━━━━━
@@ -302,7 +334,7 @@ ${contactBlock}
 
 ━━━━━━━━━━━━━━━━━━━
 · ТЕКСТ ЗАПРОСА / MESSAGE ·
-${question}
+${safeQuestion}
 
 ━━━━━━━━━━━━━━━━━━━
 ИСТОЧНИК ТРАФИКА / TRAFFIC SOURCE: ${trafficSource}
