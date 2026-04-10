@@ -432,12 +432,13 @@ if (req.files && req.files.length > 0) {
     try {
 
       const tgFileRes = await safeFetch(
-        `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
-        {
-          method: "POST",
-          body: formData
-        }
-      );
+  `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`,
+  {
+    method: "POST",
+    body: formData
+  },
+  30000
+);
 
       const tgFileData = await tgFileRes.json();
       console.log("TG FILE RESPONSE:", tgFileData);
@@ -497,8 +498,10 @@ JEWELRY & DIAMONDS
       })
     });
 
-    const data = await r.json();   // ← ВОТ ЭТОГО У ТЕБЯ НЕ БЫЛО
-    console.log("AUTO EMAIL RESPONSE:", data);
+    const data = await r.json();
+
+console.log("AUTO EMAIL STATUS:", r.status);
+console.log("AUTO EMAIL RESPONSE:", data);
 
   } catch (e) {
     console.error("AUTO EMAIL ERROR:", e);
